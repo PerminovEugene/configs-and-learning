@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"log"
 	"net"
 	"strconv"
 	"time"
 
-	"github.com/PerminovEugene/udemy/greet/greetpb"
+	"github.com/PerminovEugene/configs-and-learning/go-course/grpc/greet/greetpb"
 	"google.golang.org/grpc"
 )
 
@@ -34,6 +36,26 @@ func(*server) GreetManyTimes(req *greetpb.GreetManyTimesRequest, stream greetpb.
 	}
 	return nil
 }
+
+func(*server) LongGreet(stream greetpb.GreetService_LongGreetServer) (error) {
+	result := ""
+	fmt.Println("Received long greed")
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return stream.SendAndClose(&greetpb.LongGreetResponse{
+				Result: result,
+			})
+		}
+		if err != nil {
+			log.Fatalf("Error while reading client stream API %v", err)
+		}
+		firstName := req.GetGreeting().GetFirstName()
+		result += "Hello " + firstName + "! "
+		fmt.Println("Updated result")
+	}
+}
+
 
 func main() {
 	lis, err := net.Listen("tcp", "0.0.0.0:50051")
